@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🤖 Gemini 2.0 Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #0b0e1a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #e0e6ff;
+        }
+        .chat-container {
+            max-width: 720px;
+            width: 100%;
+            background: rgba(18, 22, 40, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 30px 25px 25px 25px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(74, 106, 255, 0.15) inset;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 300;
+            color: #c7d6ff;
+        }
+        .header h1 span {
+            background: linear-gradient(135deg, #4a6aff, #7a4aff);
+            font-size: 0.7rem;
+            padding: 2px 12px;
+            border-radius: 40px;
+            margin-left: 10px;
+            color: #fff;
+            font-weight: 400;
+        }
+        #chat-box {
+            background: rgba(13, 17, 34, 0.4);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 18px;
+            height: 350px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid rgba(47, 55, 96, 0.3);
+            color: #e0e6ff;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+        }
+        #chat-box .user {
+            color: #7ae0ff;
+            font-weight: 600;
+        }
+        #chat-box .ai {
+            color: #c7d6ff;
+        }
+        #chat-box .error {
+            color: #ff7b7b;
+        }
+        .msg-wrapper {
+            margin-bottom: 10px;
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .input-area {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: rgba(13, 17, 34, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 60px;
+            padding: 4px 4px 4px 20px;
+            border: 1px solid rgba(47, 55, 96, 0.3);
+            transition: 0.2s;
+        }
+        .input-area:focus-within {
+            border-color: #4a6aff;
+            box-shadow: 0 0 20px rgba(74, 106, 255, 0.1);
+        }
+        #user-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #f0f4ff;
+            font-size: 1rem;
+            padding: 14px 0;
+            outline: none;
+            min-width: 100px;
+        }
+        #user-input::placeholder {
+            color: #5a6a90;
+        }
+        #send-btn {
+            background: linear-gradient(135deg, #4a6aff, #6a4aff);
+            border: none;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 15px rgba(74, 106, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        #send-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(74, 106, 255, 0.5);
+        }
+        #send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        #status {
+            text-align: center;
+            color: #5a6a90;
+            font-size: 0.75rem;
+            margin-top: 14px;
+        }
+        #chat-box::-webkit-scrollbar {
+            width: 5px;
+        }
+        #chat-box::-webkit-scrollbar-track {
+            background: rgba(22, 29, 54, 0.3);
+            border-radius: 10px;
+        }
+        #chat-box::-webkit-scrollbar-thumb {
+            background: #3f4a7a;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="header">
+            <h1>🤖 Gemini 2.0 <span>Flash</span></h1>
+        </div>
+
+        <div id="chat-box">
+            <div class="msg-wrapper"><span class="ai">🚀 नमस्ते! मैं Gemini 2.0 Flash हूँ। आप क्या जानना चाहते हैं?</span></div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Ask anything..." />
+            <button id="send-btn">➤ Send</button>
+        </div>
+        <div id="status">✅ Ready</div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const statusDiv = document.getElementById('status');
+
+        function addMessage(content, role) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'msg-wrapper';
+            const prefix = role === 'user' ? 'You' : (role === 'ai' ? 'AI' : '⚠️ Error');
+            const cls = role === 'user' ? 'user' : (role === 'ai' ? 'ai' : 'error');
+            wrapper.innerHTML = `<span class="${cls}">${prefix}:</span> ${content}`;
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function handleSend() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Disable UI
+            sendBtn.disabled = true;
+            statusDiv.textContent = '⏳ Thinking...';
+            addMessage(message, 'user');
+            userInput.value = '';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Unknown error');
+                }
+
+                addMessage(data.reply, 'ai');
+                statusDiv.textContent = '✅ Ready';
+            } catch (error) {
+                console.error('Fetch error:', error);
+                addMessage('❌ ' + error.message, 'error');
+                statusDiv.textContent = '❌ Error';
+            }
+
+            sendBtn.disabled = false;
+            userInput.focus();
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+
+        userInput.focus();
+    </script>
+</body>
+  </html>
