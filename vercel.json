@@ -1,18 +1,6 @@
 {
   "version": 2,
-  "functions": {
-    "api/chat.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "rewrites": [
-    {
-      "source": "/api/chat",
-      "destination": "/api/chat"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/public/index.html"
-    }
+    { "source": "/(.*)", "destination": "/public/index.html" }
   ]
 }
