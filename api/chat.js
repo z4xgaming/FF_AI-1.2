@@ -1,64 +1,62 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
 export default async function handler(req, res) {
-  // Only POST
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+    // CORS Headers set kar rahe hain taaki koi block na aaye
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    );
 
-  const { message } = req.body;
-  if (!message || typeof message !== 'string') {
-    return res.status(400).json({ error: 'Missing or invalid "message"' });
-  }
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
 
-  // Read API key from environment variable
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.error('GEMINI_API_KEY not set in environment');
-    return res.status(500).json({ error: 'Server misconfiguration: API key missing' });
-  }
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-  try {
-    // Initialize Gemini
-    const genAI = new GoogleGenerativeAI(apiKey);
-    // Use the most stable model: gemini-1.5-flash
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    try {
+        const { message } = req.body;
+        if (!message) {
+            return res.status(400).json({ error: 'Message is required' });
+        }
 
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: message }] }],
-    });
+        // Aapki di hui AQ. wali key jo Screenshot_2026-07-06-00-38-02-337_com.android.chrome.jpg mein bhi hai
+        const AUTH_TOKEN = 'AQ.Ab8RN6KV8cOpGvjR0NVuI8ek2ZmFI0HwCE4He5XZgytfWZqUNQ';
 
-    const reply = result.response.text();
-    return res.status(200).json({ reply });
+        // 🎯 OAuth/Access Token ke liye URL bina '?key=' ke call hota hai
+        const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
-  } catch (error) {
-    console.error('Gemini API error:', error);
+        const payload = {
+            contents: [{
+                parts: [{ text: message }]
+            }]
+        };
 
-    // Try fallback to gemini-pro (just in case)
-    if (error.message?.includes('not found') || error.status === 404) {
-      try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const fallbackModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
-        const result = await fallbackModel.generateContent({
-          contents: [{ role: 'user', parts: [{ text: message }] }],
+        // Bearer Header ke saath request bhej rahe hain taaki 401 Unauthorized na aaye
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${AUTH_TOKEN}`
+            },
+            body: JSON.stringify(payload)
         });
-        const reply = result.response.text();
-        return res.status(200).json({ reply });
-      } catch (fallbackError) {
-        console.error('Fallback failed:', fallbackError);
-        return res.status(500).json({ error: 'All models failed. Please check your API key and quota.' });
-      }
-    }
 
-    // Other errors: quota, invalid key, etc.
-    let userMsg = 'Gemini API error. ';
-    if (error.message?.includes('quota')) {
-      userMsg = '⚠️ Quota exhausted. Please enable billing or use a new key.';
-    } else if (error.message?.includes('API key')) {
-      userMsg = '❌ Invalid API key. Generate a new one from Google AI Studio.';
-    } else {
-      userMsg = `❌ ${error.message || 'Unknown error'}`;
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error?.message || `Google API Error: ${response.status}`);
+        }
+
+        const replyText = data.candidates[0].content.parts[0].text;
+        return res.status(200).json({ reply: replyText });
+
+    } catch (error) {
+        console.error("Backend Error:", error);
+        return res.status(500).json({ error: error.message });
     }
-    return res.status(500).json({ error: userMsg });
-  }
-}
+                                     }
+                                     
