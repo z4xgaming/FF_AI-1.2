@@ -1,6 +1,7 @@
 {
   "name": "gemini-chat-serverless",
   "version": "1.0.0",
+  "type": "module",
   "description": "Serverless Gemini 2.0 Flash chat via Vercel",
   "main": "api/chat.js",
   "dependencies": {
