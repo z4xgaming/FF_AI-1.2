@@ -1,0 +1,9 @@
+{
+  "name": "gemini-chat-serverless",
+  "version": "1.0.0",
+  "description": "Serverless Gemini 2.0 Flash chat via Vercel",
+  "main": "api/chat.js",
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0"
+  }
+}
